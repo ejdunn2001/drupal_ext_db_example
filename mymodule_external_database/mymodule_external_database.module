@@ -1,0 +1,37 @@
+<?php
+
+/**
+ * @file
+ * Contains mymodule_external_database.module.
+ */
+
+use Drupal\Core\Routing\RouteMatchInterface;
+
+/**
+ * Implements hook_help().
+ *
+ * {@inheritDoc}
+ */
+function mymodule_external_database_help($route_name, RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    // Main module help for the mymodule_external_database module.
+    case 'help.page.mymodule_external_database':
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('This module connects to the existing Web Database and updates and adds content.') . '</p>';
+      return $output;
+
+    default:
+  }
+}
+
+/**
+ * Implements hook_cron().
+ *
+ * Cron run to update articles based on the external database.
+ * This calls the update as a service limiting what has to be
+ * done in the actual hook_cron() function.
+ */
+function mymodule_external_database_cron() {
+  \Drupal::service('mymodule_external_database.update')->update();
+}

@@ -1,0 +1,11 @@
+services:
+  logger.channel.mymodule_external_database:
+    parent: logger.channel_base
+    arguments: ['external_database']
+  externaldb:
+    class: Drupal\Core\Database\Connection
+    factory: Drupal\Core\Database\Database::getConnection
+    arguments: [default, externaldb]
+  mymodule_external_database.update:
+    class: Drupal\mymodule_external_database\ExternalDatabaseUpdateService
+    arguments: ['@externaldb', '@logger.channel.external_database', '@entity_type.manager']

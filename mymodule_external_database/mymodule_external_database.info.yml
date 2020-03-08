@@ -1,0 +1,5 @@
+name: 'EXAMPLE External Database'
+type: module
+description: 'This module connects to the existing Web Database and updates and adds content.'
+core: 8.x
+package: 'Other'
