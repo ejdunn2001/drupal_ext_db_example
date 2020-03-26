@@ -8,4 +8,4 @@ services:
     arguments: [default, externaldb]
   mymodule_external_database.update:
     class: Drupal\mymodule_external_database\ExternalDatabaseUpdateService
-    arguments: ['@externaldb', '@logger.channel.external_database', '@entity_type.manager']
+    arguments: ['@externaldb', '@logger.channel.external_database', '@entity_type.manager', '@state', '@datetime.time']

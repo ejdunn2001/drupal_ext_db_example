@@ -4,12 +4,16 @@ namespace Drupal\mymodule_external_database;
 
 use Drupal\Core\Database\Connection;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\State\StateInterface;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\Component\Datetime\TimeInterface;
 
 /**
  * Class ExternalDatabaseUpdateService.
  */
 class ExternalDatabaseUpdateService implements ExternalDatabaseUpdateInterface {
+
 
   /**
    * The database connection.
@@ -33,6 +37,20 @@ class ExternalDatabaseUpdateService implements ExternalDatabaseUpdateInterface {
   protected $entityTypeManager;
 
   /**
+   * State API service.
+   *
+   * @var \Drupal\Core\State\State
+   */
+  protected $state;
+
+  /**
+   * Time service.
+   *
+   * @var \Drupal\Component\Datetime\TimeInterface
+   */
+  protected $time;
+
+  /**
    * Constructs a new ExternalDatabaseUpdateService object.
    *
    * @param \Drupal\Core\Database\Connection $database
@@ -41,11 +59,32 @@ class ExternalDatabaseUpdateService implements ExternalDatabaseUpdateInterface {
    *   The logger.
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager
    *   Entity Type Manager.
+   * @param \Drupal\Core\State\StateInterface $state
+   *   State API.
+   * @param \Drupal\Component\Datetime\TimeInterface $time
+   *   Time.
    */
-  public function __construct(Connection $database, LoggerInterface $logger, EntityTypeManagerInterface $entityTypeManager) {
-    $this->database          = $database;
-    $this->logger            = $logger;
+  public function __construct(Connection $database, LoggerInterface $logger, EntityTypeManagerInterface $entityTypeManager, StateInterface $state, TimeInterface $time) {
+    $this->database = $database;
+    $this->logger = $logger;
     $this->entityTypeManager = $entityTypeManager;
+    $this->state = $state;
+    $this->time = $time;
+  }
+
+  /**
+   * Create.
+   *
+   * {@inheritDoc}
+   */
+  public static function create(ContainerInterface $container, $time) {
+    return new static(
+    $container->get('database'),
+    $container->get('logger.factory')->get('action'),
+    $container->get('entity_type.manager'),
+    $container->get('state'),
+    $container->get('datetime.time')
+    );
   }
 
   /**
@@ -57,7 +96,7 @@ class ExternalDatabaseUpdateService implements ExternalDatabaseUpdateInterface {
    */
   public function update() {
     // Get time of last cron run.
-    $last_run     = \Drupal::state()->get('external_database.last_check', 1290540978);
+    $last_run     = $this->state->get('fsh_external_database.last_check', 1290540978);
     $new_count    = 0;
     $update_count = 0;
 
@@ -90,7 +129,8 @@ class ExternalDatabaseUpdateService implements ExternalDatabaseUpdateInterface {
           $new_count++;
         }
         else {
-          $this->logger->error('There was a problem adding a new article for @article_id.', ['@article_id' => $article_id]);
+          $this->logger->error('There was a problem adding a new article for @article_id.',
+             ['@article_id' => $article_id]);
         }
       }
       else {
@@ -99,13 +139,14 @@ class ExternalDatabaseUpdateService implements ExternalDatabaseUpdateInterface {
           $update_count++;
         }
         else {
-          $this->logger->error('There was a problem updating a article for @article_id.', ['@article_id' => $article_id]);
+          $this->logger->error('There was a problem updating a article for @article_id.',
+          ['@article_id' => $article_id]);
         }
       }
     }
     // Save the time of this cron run.
-    $request_time = \Drupal::time()->getRequestTime();
-    \Drupal::state()->set('external_database.last_check', $request_time);
+    $request_time = $this->time->getRequestTime();
+    $this->state->set('fsh_external_database.last_check', $request_time);
     $this->logger->notice('Added @new_count articles and updated @update_count articles.', [
       '@new_count'    => $new_count,
       '@update_count' => $update_count,
